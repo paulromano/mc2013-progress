@@ -2,7 +2,7 @@
 manuscript = mc2013-progress
 
 # List of images to be included
-images = opr-without-ufs.pdf opr-with-ufs.pdf opr-histogram.pdf
+images = opr-without-ufs.pdf opr-with-ufs.pdf opr-histogram.pdf entropy.pdf
 
 # PdfLaTeX compilation options
 latexopt   = -halt-on-error -file-line-error
@@ -27,6 +27,9 @@ opr-with%.pdf: make_meshplots.py
 	python $<
 
 opr-histogram.pdf: make_histogram.py
+	python $<
+
+entropy.pdf: plot_entropy.py
 	python $<
 
 #=================================================================

@@ -314,9 +314,10 @@ determines what cell corresponds to each pixel and writes out a simple PPM
 format bitmap image. The PPM images can be natively viewed on many Linux
 distributions or can also be converted to a compressed format such as PNG with
 an image converting utility. As an example of the current plotting capabilities,
-Figure \ref{fig:plotting} shows a plot of the OPR reactor model. In the future, more advanced plotting capabilities such as 3D point cloud plots
-based on ray-tracing may be added to OpenMC. Near-term development of a
-graphical user interface to enable interactive plotting is also underway.
+Figure \ref{fig:plotting} shows a plot of the OPR reactor model. In the future,
+more advanced plotting capabilities such as 3D point cloud plots based on
+ray-tracing may be added to OpenMC. Near-term development of a graphical user
+interface to enable interactive plotting is also underway.
 
 \begin{figure}[!htb]
   \centering \includegraphics[width=3in]{opr.png}
@@ -391,8 +392,9 @@ translation.
 
 \begin{figure}[!htb]
   \centering
-  (WAITING FOR FIGURE FROM BEN) % \includegraphics[width=4.0in]{atr.png}
-  \caption{Geometry plot of a model of the Advanced Test Reactor.}
+  \includegraphics[width=3.0in]{atr.png}
+  \caption{Geometry plot of a quarter-core OpenMC model of the Advanced Test
+    Reactor.}
   \label{fig:atr}
 \end{figure}  
 
@@ -409,10 +411,101 @@ rely on the ability to obtain nuclide reaction rates.
 
 \subsection{CMFD}
 
-(BRYAN- I'd like to have a section here talking about CMFD capabilities. I know
-you will probably have an entire paper on this, so a summary is fine. You don't
-have to reveal anything too special, basically just that we do have CMFD
-capability.)
+The Coarse Mesh Finite Difference (CMFD) method has been widely applied in
+deterministic nodal diffusion calculations to reduce number of overall fission
+source iterations. Recently, CMFD has been applied to reactor calculations using
+multigroup Monte Carlo \cite{physor-lee-2012} where acceleration of fission
+source convergence was also achieved. The CMFD acceleration method has been
+integrated into OpenMC. CMFD acceleration works by solving the multigroup
+neutron diffusion equation after Monte Carlo batches to obtain a better estimate
+of the global fission source.  This process can be described in 3 steps:
+\begin{enumerate}
+ \item Compute diffusion parameters by preserving OpenMC neutron balance on
+   coarse mesh.
+ \item Solve multigroup neutron diffusion equation to obtain fission source
+   distribution.
+ \item Force Monte Carlo to use fission source distribution from Step 2 by
+   modifying source weights.
+\end{enumerate}
+
+Step 1 is the most crucial part of CMFD. This acceleration process will only be
+effective if the balance of neutrons in each energy group and coarse mesh cell
+is mapped consistently from transport theory to low-order diffusion theory. This
+requires a tally system, such as that in OpenMC, that can calculate integrated
+reaction rates and net currents on every coarse mesh surface. Homogenized
+macroscopic cross sections, needed in diffusion theory, are calculated to
+preserve reaction rates by dividing integrated reaction rate tallies by
+integrated flux tallies from OpenMC,
+\begin{equation}
+  \label{eq:macro_xs}
+  \overline{\Sigma}_{\alpha_{l,m,n}}^{g} = \frac{\left\langle
+    \Sigma_{\alpha}\phi \right\rangle_{l,m,n}^{g}} {\left\langle\phi
+    \right\rangle_{l,m,n}^{g}}.
+\end{equation}
+In Eq. \ref{eq:macro_xs}, $\overline{\Sigma}_{\alpha_{l,m,n}}^{g}$ is a
+macroscopic cross section in coarse mesh cell ($l,m,n$) and energy group $g$ and
+is calculated by preserving the arbitrary reaction rate $\alpha$ from OpenMC
+tallies. The numerator, $\left\langle\Sigma_{\alpha}\phi \right\rangle_{l,m,n}^{g}$, 
+represents an integrated reaction rate tally, while the denominator, 
+$\left\langle\phi\right\rangle_{l,m,n}^{g}$, is an integrated flux tally.
+To retain total neutron balance, the leakage rate out of a mesh cell
+must also be preserved.  This is accomplished by adding a free equivalence
+parameter in the discretized Fick's Law that relates net current to scalar flux,
+\begin{equation}
+  \label{eq:leakage}
+  \overline{J}_{l+1/2,m,n}^{u,g} = -\tilde{D}_{l+1/2,m,n}^{u,g}
+  \left(\overline{\overline{\phi}}_{l+1,m,n}^{g} -
+  \overline{\overline{\phi}}_{l+1,m,n}^{g} \right) \boxed{+
+    \hat{D}_{l+1/2,m,n}^{u,g} \left(\overline{\overline{\phi}}_{l+1,m,n}^{g} +
+    \overline{\overline{\phi}}_{l+1,m,n}^{g} \right)}.
+\end{equation}
+The unboxed portion of Eq. \ref{eq:leakage} represents convential discretized
+Fick's Law. The surface area-averaged net current, $\overline{J}_{l+1/2,m,n}^{u,g}$,
+can be obtained from OpenMC's surface current tallies. Diffusion coefficients 
+from neighboring cells, obtained from flux weighting the macroscopic transport 
+cross section, are combined along with the cell volume into the coupling parameter,
+$\tilde{D}_{l+1/2,m,n}^{u,g}$. The cell-averaged flux, represented as 
+$\overline{\overline{\phi}}_{l+1,m,n}^{g}$ can also be obtained from OpenMC tallies.
+Therefore, the only unknown is the equivalence parameter, $\hat{D}_{l+1/2,m,n}^{u,g}$.
+
+In step 2, the multigroup diffusion equation is solved with this equivalence
+parameter and macroscopic cross sections using standard eigenvalue problem
+solution techniques. Eq. \ref{eq:leakage} is used for the current representation in 
+the discretized diffusion equations. The final step involves modifying source weights 
+before the next OpenMC batch to force Monte Carlo to use the diffusion estimate of the
+fission source distribution. These weights are modified by the ratio of the
+expected number of neutrons present in a coarse mesh cell from the diffusion
+result to the actual number of source sites that were generated from the
+previous OpenMC batch. The following equation shows this modification:
+\begin{equation}
+  \label{eq:weight}
+  w_{j}^{\prime} = w_{j} \times \frac{N_{h}p_{l,m,n}^{g}}{\sum_{i}w_{i}} \qquad
+  i,j\in g,l,m,n
+\end{equation}
+In Eq. \ref{eq:weight}, $w_{j}$ is the weight of a neutron in a cell with indices 
+$l,m,n$ and in energy group $g$. The expected number of neutrons from diffusion is
+calculated by multiplying the number of histories per batch, $N_{h}$ with the
+normalized fission source distibution $p_{l,m,n}^{g}$. This is then compared to
+the total weight of all of the source sites are in the cell and energy group.
+
+Source convergence was studied for the 2-D OPR reactor with and without CMFD
+turned on during inactive batches.  Figure \ref{fig:cmfd} shows this source
+convergence comparison when using CMFD. Shannon entropy is used here to assess
+when the fission source distribution is converged.  For a standard OpenMC run of
+the OPR core, the Shannon entropy convergences at approximately batch 50. After
+50 batches, actives batches could begin to start accumulating statistical
+results. On the other hand, with CMFD active, the source distribution converges
+relatively faster at approximately batch 12. In this run, CMFD was turned on at
+batch 5.  For this 2-D OPR case we save about 40 inactive batches. The benefit
+of using CMFD will increase as the dominance ratio of the system increases and
+3-D reactors are analyzed.
+
+\begin{figure}[!t]
+  \centering
+  \includegraphics[width=4in]{entropy.pdf}
+  \caption{Comparison of source convergence with and without CMFD accleration.}
+  \label{fig:cmfd}
+\end{figure}  
 
 \section{Conclusions}
 
