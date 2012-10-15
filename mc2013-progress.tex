@@ -42,8 +42,9 @@
 The present work describes the latest advances and progress in the development
 of the OpenMC Monte Carlo code, an open-source code originating from the
 Massachusetts Institute of Technology. First, an overview of the development
-workflow of OpenMC is given. Various enhancements to the code and user input
-such as real-time validation are described.
+workflow of OpenMC is given. Various enhancements to the code such as real-time
+XML input validation, state points, plotting, OpenMP threading, and coarse mesh
+finite difference acceleration are described.
 
 \emph{Key Words}: Monte Carlo, transport, open source, OpenMC
 \end{abstract}
@@ -53,11 +54,11 @@ such as real-time validation are described.
 With the continual improvement of high-performance computing, many in the
 reactor physics community have begun to envision a future in which Monte Carlo
 methods could be used for the simulation of large light-water reactors. While
-possessing a number of inherent advantages over deterministic methods, the fact
-of the matter is that there are many challenges to be overcome before Monte
-Carlo methods realistically could be used in commercial reactor analysis
-\cite{net-martin-2012}. A great deal of research and development efforts are now
-focused on addressing some of these outstanding issues.
+possessing a number of inherent advantages over deterministic methods, there are
+many challenges to overcome before Monte Carlo methods could realistically be
+used in commercial reactor analysis \cite{net-martin-2012}. A great deal of
+research and development efforts are now focused on addressing some of these
+outstanding issues.
 
 The Computational Reactor Physics Group at MIT has for the last few years
 focused on analyzing and developing solutions to some of the algorithmic
@@ -71,7 +72,7 @@ were made possible by the development of a modern Monte Carlo particle transport
 code, OpenMC \cite{openmc-github-2012}.
 
 The basic geometry and physics algorithms in OpenMC have been described in
-detail previously \cite{ane-romano-2012}. In the present work, we seek to shed
+detail previously \cite{ane-romano-2013}. In the present work, we seek to shed
 light on some of the more recent developments within the OpenMC community with a
 particular focus on the software development workflow that has enabled high
 productivity development and encouraged participation by individuals and
@@ -102,10 +103,10 @@ MIT.
 
 The decision to release OpenMC as open-source software and encourage
 participation from outsiders is predicated on the assumption that doing so will
-be mutually beneficially both to the originating community (MIT) and those who
-adopt the code for further development. It is our hope and belief that by
-embracing open collaboration, researchers at different institutions can more
-effectively work towards a common goal rather than compete with one another.
+mutually benefit both the originating community (MIT) and those who adopt the
+code for further development. It is our hope and belief that by embracing open
+collaboration, researchers at different institutions can more effectively work
+towards a common goal rather than replicate already existing work.
 
 \subsection{Collaboration Workflow}
 
@@ -159,16 +160,17 @@ datatypes.
 At present, there are two ways that input files can be checked for conformance
 against the schemata. The first method is post-validation where once an input
 file has been written, it is checked against a corresponding schema using a tool
-such as \texttt{jing}. From a command-line, the user could enter \texttt{jing -c
-  \textasciitilde/openmc/src/templates/geometry.rnc geometry.xml} and any errors
-in the input file would be reported back. The first argument is the
-corresponding schema and the second argument is the XML input file. A more
-elegant method to check conformance is real-time validation with an editor such
-as GNU Emacs. When using GNU Emacs to write an input file, the input is
-continually checked against a corresponding schema (based on the root element in
-the document). If any errors are found, they are highlighted in red giving the
-user immediate visual feedback. Figure \ref{fig:relaxng} shows an example of an
-input file being validated against a schema in GNU Emacs.
+such as \texttt{jing} \cite{jing-2012}. From a command-line, the user could
+enter \texttt{jing -c \textasciitilde/openmc/src/templates/geometry.rnc
+  geometry.xml} and any errors in the input file would be reported back. The
+first argument is the corresponding schema and the second argument is the XML
+input file. A more elegant method to check conformance is real-time validation
+with an editor such as GNU Emacs \cite{emacs-2012}. When using GNU Emacs to
+write an input file, the input is continually checked against a corresponding
+schema (based on the root element in the document). If any errors are found,
+they are highlighted in red giving the user immediate visual feedback. Figure
+\ref{fig:relaxng} shows an example of an input file being validated against a
+schema in GNU Emacs.
 
 \begin{figure}[!htb]
   \centering
@@ -190,7 +192,7 @@ OpenMC is run.
 With the geometry and physics routines within OpenMC reaching a state of
 relative maturity and stability, more attention has been given to improving
 input/output options and implementing requested features. The following sections
-described some of the more important developments made recently in OpenMC.
+describe some of the more important developments made recently in OpenMC.
 
 \subsubsection{State Point Capability}
 
@@ -198,24 +200,25 @@ The output format in OpenMC for tallies and other results originally consisted
 of plain text ASCII files. While these files may be convenient if only a few
 tally quantities are desired, it is generally more difficult to analyze results
 if thousands or millions of tally quantities are desired. For many problems
-being looked at with OpenMC, such as the Monte Carlo performance benchmark, the
-ability to view, analyze, and post-process results containing millions of tally
-quantities is essential. As such, the capability to write results to binary
-files in the form of \emph{state points} has been introduced in OpenMC.
+being looked at with OpenMC, such as the Monte Carlo performance benchmark
+\cite{mc-hoogenboom-2011}, the ability to view, analyze, and post-process
+results containing millions of tally quantities is essential. As such, the
+capability to write results to binary files in the form of \emph{state points}
+has been introduced in OpenMC.
 
 A state point file contains all the information needed either to determine
 confidence intervals for tally quantities or to restart the run completely. This
 information includes the random number seed used, meta-data describing the
-tallies, and the sum and sum of squares for each tally bin at the point the
+tallies, and the sum and sum of squares for each tally bin at whatever batch the
 state point was written. Note in particular that the mean and variance are not
 stored directly in the state point file --- they must be calculated as part of
 the post-processing process. A restart capability would not be possible if the
-mean and variance were stored instead. Since it could be cumbersome for a user
-to ascertain their desired results from a binary file, a set of Python classes
-and scripts have been written to ease the burden of post-processing. The
-development of a graphical user interface is also currently underway that allows
-a quick means of viewing results for any combination of tally filters and
-scores\footnote{See \cite{ane-romano-2012} for a more complete discussion of
+mean and variance were stored. Since it could be cumbersome for a user to
+ascertain their desired results from a binary file, a set of Python classes and
+scripts have been written to ease the burden of post-processing. The development
+of a graphical user interface is also currently underway that allows a quick
+means of viewing results for any combination of tally filters and
+scores\footnote{See \cite{ane-romano-2013} for a more complete discussion of
   filters and scores.}.
 
 The generality of the state point model is particularly beneficial for research
@@ -223,13 +226,13 @@ purposes. By default, a state point file is only written at the end of a
 simulation; however, the user can request that a state point file be written at
 any specified batch or at a fixed batch interval. Since the post-processing is
 the same whether the state point was written in the middle of a run or at the
-end, it is easy to obtain and analyze tally results at any point. For example, a
+end, it is easy to obtain and analyze tally results at any batch. For example, a
 short script can be written that checks whether tally results satisfy a given
 criterion. One such criterion would be that 95\% of all tally bins have 95\%
 confidence intervals with a half-width of less than 1\% of their respective
-means (\emph{à la} the Kord Smith challenge). As a final note, state point files
-can be written either in a raw binary format or in an HDF5 format. While the
-HDF5 format should be preferred and ensures portability across different
+means (\emph{à la} Kord Smith challenge). As a final note, state point files can
+be written either in a raw binary format or in an HDF5 format. While the HDF5
+format should be preferred and ensures portability across different
 architectures, the former is made available to ensure that users can take
 advantage of state point capabilities even on systems where HDF5 is unavailable.
 
@@ -240,7 +243,7 @@ systematic underprediction of confidence intervals. As discussed in
 \cite{physor-kelly-2012}, there are a few requisite conditions that can result
 in this phenomenon: use of the method of successive generations, use of a single
 fission generation for computing ``realizations'' of the random variable, and
-use of statistical formulae for uncorrelated variables. A number of a solutions
+use of statistical formulas for uncorrelated variables. A number of solutions
 have been proposed for overcoming underprediction of confidence intervals
 including MacMillan's correction \cite{nse-macmillan-1973}, Wielandt's method
 \cite{trans-kiedrowski-2008} and batching \cite{physor-kelly-2012}. We have
@@ -253,9 +256,7 @@ In conjunction with batching capabilities, the uniform fission source (UFS)
 method proposed and implemented in the MC21 code by Sutton
 \cite{physor-kelly-2012} has also been implemented in OpenMC. When solving for
 reaction rate distributions across an entire core, the UFS method is very
-effective in flattening the distribution of relative uncertainties. The UFS
-method has been further studied and optimized by Hunter et al. recently (NEED
-REFERENCE).
+effective in flattening the distribution of relative uncertainties.
 
 As a simple demonstration of the effectiveness of the UFS method, we ran two
 simulations of a model of the OPR reactor \cite{physor-lee-2012}, a full-core
@@ -311,7 +312,9 @@ plot to be colored either by material or cell, to assign specific colors to
 certain materials/cells, and to ``mask'' certain materials/cells. With the
 plotting specification, OpenMC calls a \texttt{find\_cell} routine that
 determines what cell corresponds to each pixel and writes out a simple PPM
-format bitmap image. The PPM images can be natively viewed on many Linux
+format bitmap image\footnote{The \texttt{find\_cell} routine is also used during
+  an actual simulation and therefore the image is representative of the geometry
+  used during simulation.} The PPM images can be natively viewed on many Linux
 distributions or can also be converted to a compressed format such as PNG with
 an image converting utility. As an example of the current plotting capabilities,
 Figure \ref{fig:plotting} shows a plot of the OPR reactor model. In the future,
@@ -337,16 +340,16 @@ uncollided, have undergone one collision, have undergone two collisions,
 etc. Combined with the fixed source capability, this would provide an easy means
 of studying scattering distributions in particular nuclei and could be useful
 for validation and verification. As another example of the usefulness of fixed
-source calculations, we refer the reader to a paper by Herman et al. (NEED
-REFERENCE) wherein a fixed source calculation in OpenMC is used to generate
-highly-accurate diffusion coefficients for use in a coarse-mesh finite
-difference solver.
+source calculations, we refer the reader to a paper by Herman et
+al. \cite{mc-herman-2013} wherein a fixed source calculation in MC21 is used to
+generate highly-accurate diffusion coefficients for use in a coarse mesh finite
+difference solver. The same methodology has been implemented in OpenMC.
 
 \subsubsection{Threading with OpenMP}
 
 The lion's share of research and development using OpenMC has focused on the
 development of parallel algorithms for use on leadership-class supercomputers
-(see e.g. \cite{nse-romano-2012, ane-romano-2012, trans-romano-2012}). While
+(see e.g. \cite{nse-romano-2012, ane-romano-2013, trans-romano-2012}). While
 these efforts have greatly improved parallel scalability and overcome several
 algorithmic challenges in large-scale eigenvalue calculations, they have been
 focused primarily on distributed-memory implementations based on MPI. However,
@@ -355,13 +358,19 @@ processor, it would behoove the OpenMC developers to implement some form of
 shared-memory parallelism. As such, a recent collaboration between MIT and
 Argonne National Laboratory under the Center for Exascale Simulation of Advanced
 Reactors (CESAR) has resulted in the ability to run multi-threaded simulations
-in OpenMC using the OpenMP API. By using a directives-based API and a
-``coarse-grained'' threading implementation where batches of particles are split
-up evenly across threads, it was not necessary to make drastic modifications to
-the code. Significant speedups have been obtained on platforms ranging from
-dual-core laptops to clusters with nodes having four 12-core AMD Opteron
-processors. The CESAR studies have also helped to identify root causes for
-sub-optimal scaling on multi-core platforms \cite{ijhpca-siegel-2012}.
+in OpenMC using the OpenMP API.
+
+By using a directives-based API and a ``coarse-grained'' threading
+implementation where batches of particles are split up evenly across threads,
+only modest modifications to the code were necessary. The key aspects of the
+threading implementation are: 1) threading the main particle loop using the
+\emph{omp parallel for} construct; 2) marking key global mutable data structures
+as \emph{threadprivate}; and 3) marking all tally increments as \emph{atomic}
+operations during the tracking of a particle. Significant speedups have been
+obtained on platforms ranging from dual-core laptops to clusters with nodes
+having four 12-core AMD Opteron processors. The CESAR studies have also helped
+to identify root causes for sub-optimal scaling on multi-core platforms
+\cite{ijhpca-siegel-2012}.
 
 \subsubsection{User input improvements}
 
@@ -412,45 +421,47 @@ rely on the ability to obtain nuclide reaction rates.
 \subsection{CMFD}
 
 The Coarse Mesh Finite Difference (CMFD) method has been widely applied in
-deterministic nodal diffusion calculations to reduce number of overall fission
+deterministic nodal diffusion calculations to reduce the number of fission
 source iterations. Recently, CMFD has been applied to reactor calculations using
-multigroup Monte Carlo \cite{physor-lee-2012} where acceleration of fission
-source convergence was also achieved. The CMFD acceleration method has been
-integrated into OpenMC. CMFD acceleration works by solving the multigroup
-neutron diffusion equation after Monte Carlo batches to obtain a better estimate
-of the global fission source.  This process can be described in 3 steps:
+multigroup Monte Carlo \cite{physor-lee-2012} to accelerate convergence of the
+fission source. The CMFD acceleration method has been integrated into
+OpenMC. CMFD acceleration works by solving the multigroup neutron diffusion
+equation after each Monte Carlo batch to obtain a better estimate of the global
+fission source. This process can be described in three steps:
 \begin{enumerate}
- \item Compute diffusion parameters by preserving OpenMC neutron balance on
+ \item Compute diffusion parameters by preserving OpenMC neutron balance on a
    coarse mesh.
- \item Solve multigroup neutron diffusion equation to obtain fission source
+ \item Solve the multigroup neutron diffusion equation to obtain fission source
    distribution.
  \item Force Monte Carlo to use fission source distribution from Step 2 by
    modifying source weights.
 \end{enumerate}
 
-Step 1 is the most crucial part of CMFD. This acceleration process will only be
-effective if the balance of neutrons in each energy group and coarse mesh cell
-is mapped consistently from transport theory to low-order diffusion theory. This
-requires a tally system, such as that in OpenMC, that can calculate integrated
-reaction rates and net currents on every coarse mesh surface. Homogenized
-macroscopic cross sections, needed in diffusion theory, are calculated to
-preserve reaction rates by dividing integrated reaction rate tallies by
-integrated flux tallies from OpenMC,
+It must be stressed that lack of proper neutron balance can lead to sub-optimal
+convergence. The acceleration process will only be effective if the balance of
+neutrons in each energy group and coarse mesh cell is mapped consistently from
+transport theory to low-order diffusion theory. This in turn requires a tally
+system, such as that in OpenMC, that can calculate integrated reaction rates and
+net currents on every coarse mesh surface. Homogenized macroscopic cross
+sections, needed in diffusion theory, are calculated to preserve reaction rates
+by dividing integrated reaction rate tallies by integrated flux tallies from
+OpenMC,
 \begin{equation}
   \label{eq:macro_xs}
   \overline{\Sigma}_{\alpha_{l,m,n}}^{g} = \frac{\left\langle
     \Sigma_{\alpha}\phi \right\rangle_{l,m,n}^{g}} {\left\langle\phi
-    \right\rangle_{l,m,n}^{g}}.
+    \right\rangle_{l,m,n}^{g}},
 \end{equation}
-In Eq. \ref{eq:macro_xs}, $\overline{\Sigma}_{\alpha_{l,m,n}}^{g}$ is a
-macroscopic cross section in coarse mesh cell ($l,m,n$) and energy group $g$ and
-is calculated by preserving the arbitrary reaction rate $\alpha$ from OpenMC
-tallies. The numerator, $\left\langle\Sigma_{\alpha}\phi \right\rangle_{l,m,n}^{g}$, 
-represents an integrated reaction rate tally, while the denominator, 
-$\left\langle\phi\right\rangle_{l,m,n}^{g}$, is an integrated flux tally.
-To retain total neutron balance, the leakage rate out of a mesh cell
-must also be preserved.  This is accomplished by adding a free equivalence
-parameter in the discretized Fick's Law that relates net current to scalar flux,
+where $\overline{\Sigma}_{\alpha_{l,m,n}}^{g}$ is a macroscopic cross section in
+coarse mesh cell ($l,m,n$) and energy group $g$ calculated by preserving the
+arbitrary reaction rate $\alpha$ from OpenMC tallies. The numerator,
+$\left\langle\Sigma_{\alpha}\phi \right\rangle_{l,m,n}^{g}$, represents an
+integrated reaction rate tally, while the denominator,
+$\left\langle\phi\right\rangle_{l,m,n}^{g}$, is an integrated flux tally.  To
+retain total neutron balance, the leakage rate out of a mesh cell must also be
+preserved.  This is accomplished by adding a free equivalence parameter in the
+discretized Fick's Law that relates net current to scalar flux
+\cite{physor-smith-2002},
 \begin{equation}
   \label{eq:leakage}
   \overline{J}_{l+1/2,m,n}^{u,g} = -\tilde{D}_{l+1/2,m,n}^{u,g}
@@ -459,18 +470,19 @@ parameter in the discretized Fick's Law that relates net current to scalar flux,
     \hat{D}_{l+1/2,m,n}^{u,g} \left(\overline{\overline{\phi}}_{l+1,m,n}^{g} +
     \overline{\overline{\phi}}_{l+1,m,n}^{g} \right)}.
 \end{equation}
-The unboxed portion of Eq. \ref{eq:leakage} represents convential discretized
-Fick's Law. The surface area-averaged net current, $\overline{J}_{l+1/2,m,n}^{u,g}$,
-can be obtained from OpenMC's surface current tallies. Diffusion coefficients 
-from neighboring cells, obtained from flux weighting the macroscopic transport 
-cross section, are combined along with the cell volume into the coupling parameter,
-$\tilde{D}_{l+1/2,m,n}^{u,g}$. The cell-averaged flux, represented as 
-$\overline{\overline{\phi}}_{l+1,m,n}^{g}$ can also be obtained from OpenMC tallies.
-Therefore, the only unknown is the equivalence parameter, $\hat{D}_{l+1/2,m,n}^{u,g}$.
+The unboxed portion of Eq. \eqref{eq:leakage} represents conventional
+discretized Fick's Law. The surface area-averaged net current,
+$\overline{J}_{l+1/2,m,n}^{u,g}$, can be obtained from OpenMC's surface current
+tallies. Diffusion coefficients from neighboring cells, obtained from flux
+weighting the macroscopic transport cross section, are combined along with the
+cell volume into the coupling parameter, $\tilde{D}_{l+1/2,m,n}^{u,g}$. The
+cell-averaged flux, represented as $\overline{\overline{\phi}}_{l+1,m,n}^{g}$
+can also be obtained from OpenMC tallies.  Therefore, the only unknown is the
+equivalence parameter, $\hat{D}_{l+1/2,m,n}^{u,g}$.
 
 In step 2, the multigroup diffusion equation is solved with this equivalence
 parameter and macroscopic cross sections using standard eigenvalue problem
-solution techniques. Eq. \ref{eq:leakage} is used for the current representation in 
+solution techniques. Eq. \eqref{eq:leakage} is used for the current representation in 
 the discretized diffusion equations. The final step involves modifying source weights 
 before the next OpenMC batch to force Monte Carlo to use the diffusion estimate of the
 fission source distribution. These weights are modified by the ratio of the
@@ -482,28 +494,29 @@ previous OpenMC batch. The following equation shows this modification:
   w_{j}^{\prime} = w_{j} \times \frac{N_{h}p_{l,m,n}^{g}}{\sum_{i}w_{i}} \qquad
   i,j\in g,l,m,n
 \end{equation}
-In Eq. \ref{eq:weight}, $w_{j}$ is the weight of a neutron in a cell with indices 
-$l,m,n$ and in energy group $g$. The expected number of neutrons from diffusion is
-calculated by multiplying the number of histories per batch, $N_{h}$ with the
-normalized fission source distibution $p_{l,m,n}^{g}$. This is then compared to
-the total weight of all of the source sites are in the cell and energy group.
+where $w_{j}$ and $w_{j}^{\prime}$ are the un-modified and modified weights of
+neutrons in coarse mesh cell ($l,m,n$) and energy group $g$, respectively. The
+expected number of neutrons from diffusion is calculated by multiplying the
+number of histories per batch, $N_{h}$ with the normalized fission source
+distribution $p_{l,m,n}^{g}$. This is then compared to the total weight of source
+sites in the corresponding cell and energy group.
 
-Source convergence was studied for the 2-D OPR reactor with and without CMFD
-turned on during inactive batches.  Figure \ref{fig:cmfd} shows this source
-convergence comparison when using CMFD. Shannon entropy is used here to assess
-when the fission source distribution is converged.  For a standard OpenMC run of
-the OPR core, the Shannon entropy convergences at approximately batch 50. After
-50 batches, actives batches could begin to start accumulating statistical
-results. On the other hand, with CMFD active, the source distribution converges
-relatively faster at approximately batch 12. In this run, CMFD was turned on at
-batch 5.  For this 2-D OPR case we save about 40 inactive batches. The benefit
-of using CMFD will increase as the dominance ratio of the system increases and
-3-D reactors are analyzed.
+Source convergence was studied for the 2D OPR reactor with and without CMFD
+turned on during inactive batches.  Figure \ref{fig:cmfd} shows the effect of
+CMFD on source convergence as measured by the Shannon entropy of the fission
+source distribution. For a standard OpenMC run of the OPR core, the Shannon
+entropy convergences at approximately batch 40, at which point actives batches
+could begin to start accumulating statistical results. On the other hand, with
+CMFD active, the source distribution converges in only 15 batches. In this run,
+CMFD was turned on at batch 5 resulting in a sudden decrease in the CMFD Shannon
+entropy as shown in Figure \ref{fig:cmfd}. For this 2D OPR model, the use of CMFD
+saves about 25 inactive batches. The benefit of using CMFD will increase as the
+dominance ratio of the system increases, e.g. in 3D full-core reactor models.
 
 \begin{figure}[!t]
   \centering
   \includegraphics[width=4in]{entropy.pdf}
-  \caption{Comparison of source convergence with and without CMFD accleration.}
+  \caption{Comparison of source convergence with and without CMFD acceleration.}
   \label{fig:cmfd}
 \end{figure}  
 
@@ -522,9 +535,9 @@ The present work summarizes some of the latest developments within OpenMC. The
 integration-manager workflow presented allows anyone to contribute to OpenMC by
 forking the main repository and issuing pull requests. A number of developments
 were discussed which will help users be more productive, such as real-time XML
-validation, state points, material definition options, and plotting
-capabilities. Lastly, improvements in geometry and tally capabilities were
-mentioned.
+validation, state points, material definition options, plotting capabilities,
+and CMFD acceleration. Lastly, improvements in geometry and tally capabilities
+were mentioned.
 
 \section*{Acknowledgments}
 
