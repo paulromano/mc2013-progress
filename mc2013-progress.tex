@@ -448,11 +448,11 @@ by dividing integrated reaction rate tallies by integrated flux tallies from
 OpenMC,
 \begin{equation}
   \label{eq:macro_xs}
-  \overline{\Sigma}_{\alpha_{l,m,n}}^{g} = \frac{\left\langle
+  \overline{\overline{\Sigma}}_{\alpha_{l,m,n}}^{g} = \frac{\left\langle
     \Sigma_{\alpha}\phi \right\rangle_{l,m,n}^{g}} {\left\langle\phi
     \right\rangle_{l,m,n}^{g}},
 \end{equation}
-where $\overline{\Sigma}_{\alpha_{l,m,n}}^{g}$ is a macroscopic cross section in
+where $\overline{\overline{\Sigma}}_{\alpha_{l,m,n}}^{g}$ is a macroscopic cross section in
 coarse mesh cell ($l,m,n$) and energy group $g$ calculated by preserving the
 arbitrary reaction rate $\alpha$ from OpenMC tallies. The numerator,
 $\left\langle\Sigma_{\alpha}\phi \right\rangle_{l,m,n}^{g}$, represents an
@@ -491,15 +491,14 @@ result to the actual number of source sites that were generated from the
 previous OpenMC batch. The following equation shows this modification:
 \begin{equation}
   \label{eq:weight}
-  w_{j}^{\prime} = w_{j} \times \frac{N_{h}p_{l,m,n}^{g}}{\sum_{i}w_{i}} \qquad
-  i,j\in g,l,m,n
+  w_{j}^{\prime} = w_{j} \times \frac{N_{h}p_{l,m,n}^{g}}{\sum_{i}w_{i}}
 \end{equation}
 where $w_{j}$ and $w_{j}^{\prime}$ are the un-modified and modified weights of
-neutrons in coarse mesh cell ($l,m,n$) and energy group $g$, respectively. The
-expected number of neutrons from diffusion is calculated by multiplying the
-number of histories per batch, $N_{h}$ with the normalized fission source
-distribution $p_{l,m,n}^{g}$. This is then compared to the total weight of source
-sites in the corresponding cell and energy group.
+the $j$th neutron in coarse mesh cell ($l,m,n$) and energy group $g$,
+respectively. The expected number of neutrons from diffusion is calculated by
+multiplying the number of histories per batch, $N_{h}$ with the normalized
+fission source distribution $p_{l,m,n}^{g}$. This is then compared to the total
+weight of source sites in the corresponding cell and energy group.
 
 Source convergence was studied for the 2D OPR reactor with and without CMFD
 turned on during inactive batches.  Figure \ref{fig:cmfd} shows the effect of
