@@ -213,13 +213,13 @@ tallies, and the sum and sum of squares for each tally bin at whatever batch the
 state point was written. Note in particular that the mean and variance are not
 stored directly in the state point file --- they must be calculated as part of
 the post-processing process. A restart capability would not be possible if the
-mean and variance were stored. Since it could be cumbersome for a user to
-ascertain their desired results from a binary file, a set of Python classes and
-scripts have been written to ease the burden of post-processing. The development
-of a graphical user interface is also currently underway that allows a quick
-means of viewing results for any combination of tally filters and
-scores\footnote{See \cite{ane-romano-2013} for a more complete discussion of
-  filters and scores.}.
+mean and variance were stored instead of the sum and sum of squares. Since it
+could be cumbersome for a user to ascertain their desired results from a binary
+file, a set of Python classes and scripts have been written to ease the burden
+of post-processing. The development of a graphical user interface is also
+currently underway that allows a quick means of viewing results for any
+combination of tally filters and scores\footnote{See \cite{ane-romano-2013} for
+  a more complete discussion of filters and scores.}.
 
 The generality of the state point model is particularly beneficial for research
 purposes. By default, a state point file is only written at the end of a
@@ -482,13 +482,14 @@ equivalence parameter, $\hat{D}_{l+1/2,m,n}^{u,g}$.
 
 In step 2, the multigroup diffusion equation is solved with this equivalence
 parameter and macroscopic cross sections using standard eigenvalue problem
-solution techniques. Eq. \eqref{eq:leakage} is used for the current representation in 
-the discretized diffusion equations. The final step involves modifying source weights 
-before the next OpenMC batch to force Monte Carlo to use the diffusion estimate of the
-fission source distribution. These weights are modified by the ratio of the
-expected number of neutrons present in a coarse mesh cell from the diffusion
-result to the actual number of source sites that were generated from the
-previous OpenMC batch. The following equation shows this modification:
+solution techniques. Eq. \eqref{eq:leakage} is used for the current
+representation in the discretized diffusion equations. The final step involves
+modifying source weights before the next OpenMC batch to force Monte Carlo to
+use the diffusion estimate of the fission source distribution. These weights are
+modified by the ratio of the expected number of neutrons present in a coarse
+mesh cell from the diffusion result to the actual number of source sites that
+were generated from the previous OpenMC batch. The following equation shows this
+modification:
 \begin{equation}
   \label{eq:weight}
   w_{j}^{\prime} = w_{j} \times \frac{N_{h}p_{l,m,n}^{g}}{\sum_{i}w_{i}}
@@ -508,9 +509,12 @@ entropy convergences at approximately batch 40, at which point actives batches
 could begin to start accumulating statistical results. On the other hand, with
 CMFD active, the source distribution converges in only 15 batches. In this run,
 CMFD was turned on at batch 5 resulting in a sudden decrease in the CMFD Shannon
-entropy as shown in Figure \ref{fig:cmfd}. For this 2D OPR model, the use of CMFD
-saves about 25 inactive batches. The benefit of using CMFD will increase as the
-dominance ratio of the system increases, e.g. in 3D full-core reactor models.
+entropy as shown in Figure \ref{fig:cmfd}. For this 2D OPR model, the use of
+CMFD saves about 25 inactive batches. It should be noted that the computational
+time to perform the linear solve of the CMFD system is negligible compared to
+the time to transport neutrons using Monte Carlo. The benefit of using CMFD will
+increase as the dominance ratio of the system increases, e.g. in 3D full-core
+reactor models.
 
 \begin{figure}[!t]
   \centering
